@@ -3,7 +3,7 @@ const uuid = require('uuid/v4');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 let helpers = require('../_helpers');
-
+let router = express.Router();
 let db = require('../db');
 const SECRET = 'ilovealyona15031996VERYMUCH'
 
@@ -13,10 +13,7 @@ function createHash(pass) {
 	hash += cipher.final('hex');
 	return hash;
 }
-let router = express.Router();
-router.get('/', function (req, res) {
-	res.write("HELLO!")
-})
+
 router.get('/:id', helpers.verifyToken, function (req, res) {
 	let { id } = req.params;
 	jwt.verify(req.token, SECRET, function (err, decoded) {
