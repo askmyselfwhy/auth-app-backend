@@ -3,7 +3,7 @@ const uuid = require('uuid/v4');
 const jwt = require('jsonwebtoken');
 const { check, validationResult } = require('express-validator/check');
 const { sanitize } = require('express-validator/filter');
-let helpers = require('../_helpers');
+const helpers = require('../_helpers');
 const constants = require('../_constants');
 
 let router = express.Router();
@@ -12,59 +12,56 @@ const pool = require('../db');
 router.get('/:id', helpers.verifyToken, (req, res) => {
 	let { id } = req.params;
 	if (id) {
+		// Checking access token
 		jwt.verify(req.token, constants.API_SECRET, (err, decoded) => {
 			if (err)
-				res.status(401).send({ message: messageConstants.NO_ACCESS });
+				res.status(401).send({ message: constants.NO_ACCESS });
+			// Checking IDs. User can retreive the information in his profile
+			// only about himself
 			if (id === decoded.user.id) {
 				pool.get_connection(qb => {
+					// Making query to db
 					qb.select('*')
 						.where({ id: id })
 						.get('users', (error, response) => {
 							qb.release();
 							if (error)
-								res.status(404).send({ message: messageConstants.DB_ERROR });
+								res.status(404).send({ message: constants.DB_ERROR });
+							// Sending back user data
 							let user = response[0];
 							res.json(user)
 						})
 				})
 			} else {
-				res.status(401).send({ message: messageConstants.NO_ACCESS })
+				res.status(401).send({ message: constants.NO_ACCESS })
 			}
 		})
 	}
 });
-
-router.patch('/:id', helpers.verifyToken, (req, res) => {
+router.delete('/:id', helpers.verifyToken, (req, res) => {
 	let { id } = req.params;
-	let { about, imageURL, password, first_name, last_name } = req.body;
-	let hash = helpers.createHash(password);
-	jwt.verify(req.token, constants.API_SECRET, (err, decoded) => {
-		if (err)
-			res.sendStatus(404);
-		if (id === decoded.id) {
-			pool.get_connection(qb => {
-				qb.set({
-					first_name: first_name,
-					last_name: last_name,
-					about: about,
-					imageURL: imageURL
-				})
-					.where({
-						id: id
-					})
-					.update('users', (error, response) => {
+	if (id) {
+		// Checking access token
+		jwt.verify(req.token, constants.API_SECRET, (err, decoded) => {
+			if (err)
+				res.status(401).send({ message: constants.NO_ACCESS });
+			// Checking IDs. User can delete only his account
+			if (id === decoded.user.id) {
+				pool.get_connection(qb => {
+					// Making query to db
+					qb.delete('users', { id: id }, (error, response) => {
 						qb.release();
 						if (error)
-							res.sendStatus(500);
-						res.sendStatus(203);
-					});
-			})
-		} else {
-			res.sendStatus(403);
-		}
-	})
+							res.status(404).send({ message: constants.DB_ERROR });
+						res.status(200).send({ message: constants.SUCCESS_DELETION });
+					})
+				})
+			} else {
+				res.status(401).send({ message: constants.NO_ACCESS })
+			}
+		})
+	}
 });
-
 router.post('/login',
 	// Validation of incoming values
 	[
@@ -147,7 +144,9 @@ router.post('/signup',
 		check('last_name')
 			.not().isEmpty()
 			.trim(),
-		sanitize(['first_name', 'last_name'])
+		check('about')
+			.trim(),
+		sanitize(['first_name', 'last_name', 'about'])
 	],
 	(req, res) => {
 		// If there are errors, then send a response back to client with error status
@@ -156,7 +155,7 @@ router.post('/signup',
 			console.log("ERRORS IN VALIDATING")
 			return res.status(422).json({ errors: errors.array() });
 		}
-		let { first_name, last_name, email, password1, password2 } = req.body;
+		let { first_name, last_name, email, password1, password2, about } = req.body;
 		// Create hash based on password
 		let hash = helpers.createHash(password1);
 		// Create object to insert into table
@@ -164,6 +163,7 @@ router.post('/signup',
 			id: uuid(),
 			first_name,
 			last_name,
+			about,
 			added: Date.now(),
 			password: hash,
 			email

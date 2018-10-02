@@ -14,19 +14,11 @@ module.exports = {
       res.sendStatus(403);
     }
   },
-  //
+  // Function for creating hash from password and secret
   createHash: function (pass) {
-    console.log(pass);
-    console.log(constants.API_SECRET);
     let cipher = crypto.createCipher('aes-128-cbc', pass);
     let hash = cipher.update(constants.API_SECRET, 'utf8', 'hex')
     hash += cipher.final('hex');
     return hash;
   },
-  verifySignInInputs: function (req, res, next) {
-    if (first_name && last_name && email &&
-      password1 && password2 && (password1 === password2)) {
-
-    }
-  }
 }

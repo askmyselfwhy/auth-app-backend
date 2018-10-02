@@ -4,4 +4,5 @@ module.exports = {
   WRONG_CREDENTIALS: "Your email or password is wrong",
   USER_EXIST: "User with such an email already exists!",
   DB_ERROR: "There are some troubles with on server!",
+  SUCCESS_DELETION: "Your account has been delete!"
 }

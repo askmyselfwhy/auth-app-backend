@@ -1,6 +1,6 @@
 let messageConstants = require('./message.constants')
 
 module.exports = {
-  API_SECRET: 'ilovealyona15031996VERYMUCH',
+  API_SECRET: 'Xms2pt6vMs',
   ...messageConstants
 }
